@@ -1,0 +1,19 @@
+# Normalize line endings
+* text=auto
+
+# Dataset files
+*.csv linguist-generated
+*.parquet linguist-generated
+*.avi linguist-generated
+*.mp4 linguist-generated
+
+# Jupyter notebooks
+*.ipynb linguist-documentation
+
+# Generated figures
+artifacts/figures/* linguist-generated
+
+# Model artifacts
+*.pt binary
+*.pth binary
+*.onnx binary
