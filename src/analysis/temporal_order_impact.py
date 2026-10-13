@@ -60,14 +60,14 @@ def evaluate_temporal_order(
     mode: str,
     seed: int,
 ) -> dict:
-    """Evaluate an existing model under a temporal ordering condition."""
+    """Evaluate a model and collect per-video predictions."""
 
     model.eval()
 
     generator = torch.Generator().manual_seed(seed)
 
-    correct = 0
-    total = 0
+    all_predictions = []
+    all_labels = []
 
     for features, labels in dataloader:
         features = reorder_sequence(
@@ -77,20 +77,32 @@ def evaluate_temporal_order(
         )
 
         features = features.to(device)
-        labels = labels.to(device)
 
         logits = model(features)
         predictions = logits.argmax(dim=1)
 
-        correct += (predictions == labels).sum().item()
-        total += labels.size(0)
+        all_predictions.extend(
+            predictions.cpu().tolist()
+        )
+        all_labels.extend(
+            labels.tolist()
+        )
+
+    predictions_array = np.asarray(all_predictions)
+    labels_array = np.asarray(all_labels)
+
+    correct = int(
+        np.sum(predictions_array == labels_array)
+    )
 
     return {
         "mode": mode,
         "seed": seed,
-        "videos": total,
+        "videos": len(labels_array),
         "correct": correct,
-        "accuracy": correct / total,
+        "accuracy": correct / len(labels_array),
+        "predictions": predictions_array,
+        "labels": labels_array,
     }
 
 
@@ -185,6 +197,41 @@ def main() -> None:
         )
         results.append(result)
 
+    original_predictions = results[0]["predictions"]
+
+    for result in results:
+        result["prediction_agreement"] = float(
+            np.mean(
+                result["predictions"] == original_predictions
+            )
+        )
+
+    # Arrays are saved separately from the summary CSV.
+    prediction_rows = []
+
+    for result in results:
+        for video_index, (label, prediction) in enumerate(
+            zip(result["labels"], result["predictions"])
+        ):
+            prediction_rows.append(
+                {
+                    "mode": result["mode"],
+                    "seed": result["seed"],
+                    "video_index": video_index,
+                    "true_label": int(label),
+                    "predicted_label": int(prediction),
+                    "agrees_with_original": bool(
+                        prediction == original_predictions[video_index]
+                    ),
+                }
+            )
+
+    predictions_df = pd.DataFrame(prediction_rows)
+
+    for result in results:
+        del result["predictions"]
+        del result["labels"]
+
     results_df = pd.DataFrame(results)
 
     output_dir = (
@@ -202,6 +249,11 @@ def main() -> None:
 
     results_df.to_csv(
         output_dir / "results.csv",
+        index=False,
+    )
+    
+    predictions_df.to_csv(
+        output_dir / "predictions.csv",
         index=False,
     )
 
@@ -239,6 +291,16 @@ def main() -> None:
     print(
         f"Shuffled std: "
         f"{shuffled['accuracy'].std(ddof=0):.4f}"
+    )
+
+    print(
+        f"Reversed prediction agreement: "
+        f"{results_df.iloc[1]['prediction_agreement']:.2%}"
+    )
+
+    print(
+        f"Shuffled mean prediction agreement: "
+        f"{shuffled['prediction_agreement'].mean():.2%}"
     )
 
     print(f"\nResults saved to: {output_dir}")

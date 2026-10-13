@@ -90,3 +90,13 @@ def test_invalid_mode(sample_sequence):
             sample_sequence,
             mode="invalid",
         )
+        
+def test_prediction_agreement():
+    original = torch.tensor([0, 1, 2, 3, 4])
+    shuffled = torch.tensor([0, 1, 3, 3, 4])
+
+    agreement = (
+        original == shuffled
+    ).float().mean().item()
+
+    assert agreement == pytest.approx(0.8)
