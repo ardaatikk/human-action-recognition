@@ -24,7 +24,10 @@ from src.config.settings import (
     WEIGHT_DECAY,
 )
 from src.data.dataset import KTHVideoDataset
+from src.data.pose_dataset import KTHPoseDataset
+
 from src.models.cnn_lstm import CNNLSTM
+from src.models.pose_lstm import PoseLSTM
 from src.training.callbacks import CheckpointManager, EarlyStopping
 from src.training.engine import run_epoch
 from src.utils.seed import set_seed
@@ -47,12 +50,12 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--model",
-        choices=["cnn_lstm"],
+        choices=["cnn_lstm", "pose_lstm"],
         default="cnn_lstm",
     )
     parser.add_argument(
         "--experiment",
-        default=DEFAULT_EXPERIMENT_NAME,
+        default=None,
     )
     parser.add_argument(
         "--epochs",
@@ -120,6 +123,22 @@ def resolve_device(requested: str) -> torch.device:
 def build_model(model_name: str) -> nn.Module:
     if model_name == "cnn_lstm":
         return CNNLSTM()
+
+    if model_name == "pose_lstm":
+        return PoseLSTM()
+
+    raise ValueError(f"Unsupported model: {model_name}")
+
+def build_dataset(
+    model_name: str,
+    split: str,
+) -> KTHVideoDataset | KTHPoseDataset:
+
+    if model_name == "cnn_lstm":
+        return KTHVideoDataset(split=split)
+
+    if model_name == "pose_lstm":
+        return KTHPoseDataset(split=split)
 
     raise ValueError(f"Unsupported model: {model_name}")
 
@@ -227,6 +246,13 @@ def restore_rng_state(state: dict) -> None:
 
 def main() -> None:
     args = parse_args()
+
+    if args.experiment is None:
+        if args.model == "cnn_lstm":
+            args.experiment = DEFAULT_EXPERIMENT_NAME
+        else:
+            args.experiment = "pose_lstm_baseline"
+
     validate_args(args)
 
     set_seed(args.seed)
@@ -302,8 +328,15 @@ def main() -> None:
     print(f"Learning rate: {args.lr}")
     print("=" * 60)
 
-    train_dataset = KTHVideoDataset(split="train")
-    validation_dataset = KTHVideoDataset(split="validation")
+    train_dataset = build_dataset(
+        model_name=args.model,
+        split="train",
+    )
+
+    validation_dataset = build_dataset(
+        model_name=args.model,
+        split="validation",
+    )
 
     train_generator = torch.Generator()
     train_generator.manual_seed(args.seed)
