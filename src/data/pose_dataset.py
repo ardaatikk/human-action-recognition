@@ -34,9 +34,9 @@ class KTHPoseDataset(Dataset):
         if num_frames <= 0:
             raise ValueError("num_frames must be positive")
 
-        if feature_mode not in ("full", "mask_only"):
+        if feature_mode not in ("full", "mask_only", "coordinates_only"):
             raise ValueError(
-                f"Invalid feature_mode: {feature_mode}"
+                f"Unsupported feature mode: {feature_mode}"
             )
 
         self.split = split
@@ -141,10 +141,15 @@ class KTHPoseDataset(Dataset):
                 .reshape(-1, 1)
             )
         else:
-            features = normalize_pose_sequence(
+            normalized_features = normalize_pose_sequence(
                 landmarks=pose_data["landmarks"],
                 detection_mask=pose_data["detection_mask"],
             )
+
+            if self.feature_mode == "coordinates_only":
+                features = normalized_features[:, :99]
+            else:
+                features = normalized_features
 
         label = self.class_to_idx[row["action"]]
 

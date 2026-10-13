@@ -50,7 +50,7 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--model",
-        choices=["cnn_lstm", "pose_lstm", "pose_mask_lstm"],
+        choices=["cnn_lstm", "pose_lstm", "pose_mask_lstm", "pose_coordinates_lstm"],
         default="cnn_lstm",
     )
     parser.add_argument(
@@ -129,6 +129,9 @@ def build_model(model_name: str) -> nn.Module:
 
     if model_name == "pose_mask_lstm":
         return PoseLSTM(input_size=1)
+    
+    if model_name == "pose_coordinates_lstm":
+        return PoseLSTM(input_size=99)
 
     raise ValueError(f"Unsupported model: {model_name}")
 
@@ -150,6 +153,12 @@ def build_dataset(
         return KTHPoseDataset(
             split=split,
             feature_mode="mask_only",
+        )
+    
+    if model_name == "pose_coordinates_lstm":
+        return KTHPoseDataset(
+            split=split,
+            feature_mode="coordinates_only",
         )
 
     raise ValueError(f"Unsupported model: {model_name}")
@@ -209,9 +218,17 @@ def append_history(path: Path, row: dict) -> None:
 
 
 def capture_rng_state() -> dict:
+    numpy_state = np.random.get_state()
+
     state = {
         "python": random.getstate(),
-        "numpy": np.random.get_state(),
+        "numpy": (
+            numpy_state[0],
+            numpy_state[1].tolist(),
+            numpy_state[2],
+            numpy_state[3],
+            numpy_state[4],
+        ),
         "torch": torch.get_rng_state(),
     }
 
@@ -264,6 +281,7 @@ def main() -> None:
             "cnn_lstm": DEFAULT_EXPERIMENT_NAME,
             "pose_lstm": "pose_lstm_baseline",
             "pose_mask_lstm": "pose_mask_only_ablation",
+            "pose_coordinates_lstm": "pose_coordinates_only_ablation",
         }
 
         args.experiment = experiment_names[args.model]
