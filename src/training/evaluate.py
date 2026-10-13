@@ -11,8 +11,8 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from src.config.settings import ACTION_CLASSES
-from src.data.dataset import KTHVideoDataset
-from src.models.cnn_lstm import CNNLSTM
+from src.config.paths import MODELS_DIR, REPORTS_DIR
+from src.training.train import build_model, build_dataset
 from src.training.metrics import calculate_classification_metrics
 
 
@@ -141,6 +141,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Evaluate a trained human action recognition model."
     )
+    
+    parser.add_argument(
+        "--model",
+        choices=["cnn_lstm", "pose_lstm"],
+        default="cnn_lstm",
+    )
 
     parser.add_argument(
         "--experiment",
@@ -177,7 +183,7 @@ def main() -> None:
     device = resolve_device(args.device)
 
     checkpoint_path = (
-        Path("artifacts/models")
+        MODELS_DIR
         / args.experiment
         / f"{args.checkpoint}_checkpoint.pt"
     )
@@ -193,17 +199,17 @@ def main() -> None:
         weights_only=False,
     )
 
-    model = CNNLSTM()
+    model = build_model(args.model)
 
     model.load_state_dict(
         checkpoint["model_state_dict"]
     )
 
     model = model.to(device)
-
-    dataset = KTHVideoDataset(
+    
+    dataset = build_dataset(
+        model_name=args.model,
         split=args.split,
-        use_cache=True,
     )
 
     dataloader = DataLoader(
@@ -216,6 +222,7 @@ def main() -> None:
     print("=" * 60)
     print("HUMAN ACTION RECOGNITION — EVALUATION")
     print("=" * 60)
+    print(f"Model:      {args.model}")
     print(f"Experiment: {args.experiment}")
     print(f"Split:      {args.split}")
     print(f"Checkpoint: {args.checkpoint}")
@@ -237,7 +244,7 @@ def main() -> None:
     )
 
     output_dir = (
-        Path("artifacts/reports")
+        REPORTS_DIR
         / args.experiment
         / args.split
         / args.checkpoint

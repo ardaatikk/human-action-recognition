@@ -16,6 +16,7 @@ from src.config.settings import ACTION_CLASSES
 def plot_training_history(
     history_path: Path,
     output_dir: Path,
+    model_name: str = "CNN + LSTM",
 ) -> None:
     """
     Plot training and validation learning curves.
@@ -68,7 +69,7 @@ def plot_training_history(
         linewidth=2,
     )
 
-    ax.set_title("CNN + LSTM — Training and Validation Loss")
+    ax.set_title(f"{model_name} — Training and Validation Loss")    
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Loss")
     ax.legend()
@@ -99,7 +100,7 @@ def plot_training_history(
         linewidth=2,
     )
 
-    ax.set_title("CNN + LSTM — Training and Validation Accuracy")
+    ax.set_title(f"{model_name} — Training and Validation Accuracy")
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Accuracy (%)")
     ax.legend()
@@ -118,6 +119,7 @@ def plot_confusion_matrix(
     matrix: np.ndarray,
     output_path: Path,
     class_names: list[str] | tuple[str, ...] = ACTION_CLASSES,
+    model_name: str = "CNN + LSTM",
 ) -> None:
     """
     Plot a confusion matrix with class labels.
@@ -164,7 +166,7 @@ def plot_confusion_matrix(
 
     ax.set_xlabel("Predicted Label")
     ax.set_ylabel("True Label")
-    ax.set_title("CNN + LSTM — Confusion Matrix")
+    ax.set_title(f"{model_name} — Confusion Matrix")
 
     threshold = matrix.max() / 2 if matrix.size else 0
 
