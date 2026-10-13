@@ -144,7 +144,7 @@ def main() -> None:
     
     parser.add_argument(
         "--model",
-        choices=["cnn_lstm", "pose_lstm"],
+        choices=["cnn_lstm", "pose_lstm", "pose_mask_lstm"],
         default="cnn_lstm",
     )
 

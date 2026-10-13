@@ -25,7 +25,56 @@ class KTHPoseDataset(Dataset):
         self,
         split: str,
         num_frames: int = NUM_FRAMES,
+        feature_mode: str = "full",
     ) -> None:
+
+        if split not in ("train", "validation", "test"):
+            raise ValueError(f"Invalid split: {split}")
+
+        if num_frames <= 0:
+            raise ValueError("num_frames must be positive")
+
+        if feature_mode not in ("full", "mask_only"):
+            raise ValueError(
+                f"Invalid feature_mode: {feature_mode}"
+            )
+
+        self.split = split
+        self.num_frames = num_frames
+        self.feature_mode = feature_mode
+
+        split_path = SPLITS_DIR / f"{split}.csv"
+
+        if not split_path.exists():
+            raise FileNotFoundError(
+                f"Split file not found: {split_path}"
+            )
+
+        self.data = pd.read_csv(split_path)
+
+        required_columns = {"path", "action"}
+
+        missing_columns = required_columns - set(self.data.columns)
+
+        if missing_columns:
+            raise ValueError(
+                f"Missing CSV columns: {sorted(missing_columns)}"
+            )
+
+        self.class_to_idx = {
+            action: index
+            for index, action in enumerate(ACTION_CLASSES)
+        }
+
+        unknown_actions = (
+            set(self.data["action"].dropna().unique())
+            - set(self.class_to_idx)
+        )
+
+        if unknown_actions or self.data["action"].isna().any():
+            raise ValueError(
+                f"Invalid action labels: {unknown_actions}"
+            )
         if split not in ("train", "validation", "test"):
             raise ValueError(f"Invalid split: {split}")
 
@@ -85,10 +134,17 @@ class KTHPoseDataset(Dataset):
             num_frames=self.num_frames,
         )
 
-        features = normalize_pose_sequence(
-            landmarks=pose_data["landmarks"],
-            detection_mask=pose_data["detection_mask"],
-        )
+        if self.feature_mode == "mask_only":
+            features = (
+                pose_data["detection_mask"]
+                .astype("float32")
+                .reshape(-1, 1)
+            )
+        else:
+            features = normalize_pose_sequence(
+                landmarks=pose_data["landmarks"],
+                detection_mask=pose_data["detection_mask"],
+            )
 
         label = self.class_to_idx[row["action"]]
 

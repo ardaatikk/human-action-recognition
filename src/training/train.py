@@ -50,7 +50,7 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--model",
-        choices=["cnn_lstm", "pose_lstm"],
+        choices=["cnn_lstm", "pose_lstm", "pose_mask_lstm"],
         default="cnn_lstm",
     )
     parser.add_argument(
@@ -127,6 +127,9 @@ def build_model(model_name: str) -> nn.Module:
     if model_name == "pose_lstm":
         return PoseLSTM()
 
+    if model_name == "pose_mask_lstm":
+        return PoseLSTM(input_size=1)
+
     raise ValueError(f"Unsupported model: {model_name}")
 
 def build_dataset(
@@ -138,7 +141,16 @@ def build_dataset(
         return KTHVideoDataset(split=split)
 
     if model_name == "pose_lstm":
-        return KTHPoseDataset(split=split)
+        return KTHPoseDataset(
+            split=split,
+            feature_mode="full",
+        )
+
+    if model_name == "pose_mask_lstm":
+        return KTHPoseDataset(
+            split=split,
+            feature_mode="mask_only",
+        )
 
     raise ValueError(f"Unsupported model: {model_name}")
 
@@ -248,10 +260,13 @@ def main() -> None:
     args = parse_args()
 
     if args.experiment is None:
-        if args.model == "cnn_lstm":
-            args.experiment = DEFAULT_EXPERIMENT_NAME
-        else:
-            args.experiment = "pose_lstm_baseline"
+        experiment_names = {
+            "cnn_lstm": DEFAULT_EXPERIMENT_NAME,
+            "pose_lstm": "pose_lstm_baseline",
+            "pose_mask_lstm": "pose_mask_only_ablation",
+        }
+
+        args.experiment = experiment_names[args.model]
 
     validate_args(args)
 
