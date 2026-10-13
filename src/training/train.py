@@ -28,6 +28,7 @@ from src.data.pose_dataset import KTHPoseDataset
 
 from src.models.cnn_lstm import CNNLSTM
 from src.models.pose_lstm import PoseLSTM
+from src.models.pose_mlp import PoseMLP
 from src.training.callbacks import CheckpointManager, EarlyStopping
 from src.training.engine import run_epoch
 from src.utils.seed import set_seed
@@ -50,7 +51,13 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--model",
-        choices=["cnn_lstm", "pose_lstm", "pose_mask_lstm", "pose_coordinates_lstm"],
+        choices=[
+            "cnn_lstm",
+            "pose_lstm",
+            "pose_mask_lstm",
+            "pose_coordinates_lstm",
+            "pose_mean_mlp",
+        ],
         default="cnn_lstm",
     )
     parser.add_argument(
@@ -132,6 +139,14 @@ def build_model(model_name: str) -> nn.Module:
     
     if model_name == "pose_coordinates_lstm":
         return PoseLSTM(input_size=99)
+    
+    if model_name == "pose_mean_mlp":
+        return PoseMLP(
+            input_size=99,
+            hidden_size=128,
+            num_classes=6,
+            dropout=0.3,
+        )
 
     raise ValueError(f"Unsupported model: {model_name}")
 
@@ -154,8 +169,11 @@ def build_dataset(
             split=split,
             feature_mode="mask_only",
         )
-    
-    if model_name == "pose_coordinates_lstm":
+
+    if model_name in (
+        "pose_coordinates_lstm",
+        "pose_mean_mlp",
+    ):
         return KTHPoseDataset(
             split=split,
             feature_mode="coordinates_only",
@@ -282,6 +300,7 @@ def main() -> None:
             "pose_lstm": "pose_lstm_baseline",
             "pose_mask_lstm": "pose_mask_only_ablation",
             "pose_coordinates_lstm": "pose_coordinates_only_ablation",
+            "pose_mean_mlp": "pose_mean_mlp_baseline",
         }
 
         args.experiment = experiment_names[args.model]
