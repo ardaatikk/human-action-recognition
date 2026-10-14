@@ -5,8 +5,7 @@
 [![MediaPipe](https://img.shields.io/badge/MediaPipe-Pose%20Estimation-0097A7)](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker)
 [![OpenCV](https://img.shields.io/badge/OpenCV-Computer%20Vision-5C3EE8?logo=opencv&logoColor=white)](https://opencv.org/)
 [![Docker](https://img.shields.io/badge/Docker-Supported-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](https://github.com/ardaatikk/human-action-recognition/actions)
-[![Tests](https://img.shields.io/badge/Tests-131%20Passed-brightgreen)](https://github.com/ardaatikk/human-action-recognition/tree/main/tests)
+[![CI](https://github.com/ardaatikk/human-action-recognition/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ardaatikk/human-action-recognition/actions/workflows/ci.yml)
 [![Research](https://img.shields.io/badge/Research-Experiments-blueviolet)](https://github.com/ardaatikk/human-action-recognition/blob/main/docs/experiments.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/ardaatikk/human-action-recognition/blob/main/LICENSE)
 
