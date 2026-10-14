@@ -75,37 +75,6 @@ class KTHPoseDataset(Dataset):
             raise ValueError(
                 f"Invalid action labels: {unknown_actions}"
             )
-        if split not in ("train", "validation", "test"):
-            raise ValueError(f"Invalid split: {split}")
-
-        if num_frames <= 0:
-            raise ValueError("num_frames must be positive")
-
-        self.split = split
-        self.num_frames = num_frames
-
-        split_path = SPLITS_DIR / f"{split}.csv"
-
-        if not split_path.exists():
-            raise FileNotFoundError(
-                f"Split file not found: {split_path}"
-            )
-
-        self.data = pd.read_csv(split_path)
-
-        required_columns = {"path", "action"}
-
-        missing_columns = required_columns - set(self.data.columns)
-
-        if missing_columns:
-            raise ValueError(
-                f"Missing CSV columns: {sorted(missing_columns)}"
-            )
-
-        self.class_to_idx = {
-            action: index
-            for index, action in enumerate(ACTION_CLASSES)
-        }
 
         unknown_actions = (
             set(self.data["action"].dropna().unique())
